@@ -243,7 +243,9 @@ The research potential is profound:
 
 > ⚠️ **Disclaimer:** The GNFS extension is currently a **conceptual framework under active research**. RH ONE releases no actual attack code and is intended solely for peaceful, open scientific exploration of the Hilbert–Pólya conjecture and its cryptographic implications.
 
-## 🔓 The RH–GNFS Connection: A Speculative Roadmap (⚠️ Speculative)
+## 🔓 The RH–GNFS Connection: A Speculative Roadmap 
+
+(⚠️ Speculative)
 
 > **Disclaimer:** The following outlines a speculative theoretical framework exploring how the spectral insights of RH ONE **might** transform the General Number Field Sieve. None of the described capabilities have been realised, proven, or implemented as attack code. They are presented solely to stimulate academic discussion on the potential implications of the Riemann Hypothesis for computational number theory.
 
