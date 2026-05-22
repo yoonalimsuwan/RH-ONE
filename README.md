@@ -108,7 +108,8 @@ All outputs (plots, logs) are saved in the working directory.
 
 📖 Usage Modes
 
-Mode Description
+Mode / Description
+
 zeros Compute real Riemann zeros using the Riemann–Siegel formula.
 train Train the SSC dynamics (learnable SOC kernel, drift, noise) to minimise statistical discrepancy with GUE.
 demo Run one SSC simulation without training and plot the spacing histogram.
