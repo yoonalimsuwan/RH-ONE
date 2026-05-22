@@ -219,9 +219,9 @@ Email: msps4u@gmail.com
 
 ---
 
-If you use RH ONE in your research, please cite the corresponding paper/DOI (to be assigned).
+If you use RH ONE in your research, please cite the corresponding paper/ https://doi.org/10.5281/zenodo.19869633
 
 ```
-
+Thank you.
 ---
 
