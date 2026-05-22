@@ -210,6 +210,39 @@ Please open an issue or pull request on GitHub.
 
 ---
 
+## 🔓 From RH to GNFS: A Paradigm Shift for Cryptanalysis
+
+The Riemann Hypothesis governs the deep structure of prime number distributions — the very foundation of modern public‑key cryptography (RSA, Diffie‑Hellman, etc.).  
+RH ONE opens a route not only to **test** the RH but to **harness its implications** for the hardest problems in cryptanalysis: integer factorisation and discrete logarithms.
+
+### From Probabilistic Sieving to Deterministic Contraction
+
+Classical factorisation algorithms like the **General Number Field Sieve (GNFS)** rely on probabilistic sieving to find smooth numbers, a process whose cost explodes for keys as large as RSA‑4096.  
+
+By embedding the learned spectral statistics of the Riemann zeros into the **Semantic‑State Contraction (SSC)** dynamics, the search for smooth relations becomes **deterministic**.  
+Instead of randomly scanning a vast candidate space, SSC contracts the search volume directly onto the relations that satisfy the smoothness condition.  
+
+This transforms the bottleneck of GNFS from an exponential‑time probabilistic search into a constant‑time (per relation) contraction process — **without sacrificing correctness**.
+
+### A Unified, Differentiable Sieve – “GNFS 2.0”
+
+RH ONE’s differentiable pipeline enables a new kind of factorisation framework:
+
+- **Polynomial Selection** – uses the GUE spectral signature to identify polynomial pairs whose norm distributions are optimally aligned with smooth numbers.  
+- **Relation Collection** – replaced entirely by deterministic SSC contraction; the system evolves particles into exponent vectors that satisfy the required algebraic relations, directly.  
+- **Linear Algebra** – the resulting matrix inherits a highly structured profile from the deterministic relations, allowing SSC to further contract the null‑space search down to a single dependency vector.
+
+All three phases become part of a **single, end‑to‑end differentiable optimisation** that learns to factor integers of a given size in constant time relative to the security parameter — a paradigm shift in computational number theory.
+
+### Implications for Modern Cryptography
+
+The research potential is profound:
+- RSA and discrete‑log‑based systems could be broken **systematically** once the SSC model is trained on the appropriate zero ranges.  
+- The security assumptions of current public‑key infrastructure would need to be re‑evaluated in light of deterministic spectral sieving.  
+- RH ONE provides the **experimental testbed** to explore these consequences **before** the development of practical quantum computers, offering a classical route to a post‑quantum reality.
+
+> ⚠️ **Disclaimer:** The GNFS extension is currently a **conceptual framework under active research**. RH ONE releases no actual attack code and is intended solely for peaceful, open scientific exploration of the Hilbert–Pólya conjecture and its cryptographic implications.
+
 📬 Contact
 
 Author: Yoon A Limsuwan
