@@ -76,7 +76,7 @@ This paradigm makes RH ONE an ideal test‑bed for theoretical physicists and ma
 **Requirements:** Python ≥ 3.10, PyTorch ≥ 2.0, NumPy, SciPy, Matplotlib (optional).
 
 ```bash
-git clone https://github.com/yourusername/rh-one.git
+git clone https://github.com/yoonalimsuwan/RH-ONE.git
 cd rh-one
 pip install -r requirements.txt
 ```
@@ -210,8 +210,9 @@ Please open an issue or pull request on GitHub.
 📬 Contact
 
 Author: Yoon A Limsuwan
-Repository: https://github.com/yourusername/rh-one
-Email: your.email@example.com
+Repository: https://github.com/yoonalimsuwan/RH-ONE
+
+Email: msps4u@gmail.com
 
 ---
 
