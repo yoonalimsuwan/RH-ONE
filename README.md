@@ -7,6 +7,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-red.svg)](https://pytorch.org/)
 [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.XXXXXX-blue)]() <!-- replace later -->
+https://doi.org/10.5281/zenodo.19869633
 
 RH ONE provides an **end‑to‑end differentiable pipeline** that:
 
