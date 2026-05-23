@@ -1,131 +1,184 @@
 =======================================================================
-GRH ONE — Generalized Riemann Hypothesis Extension Module (Corrected)
+GRH ONE — Generalized Riemann Hypothesis Fully Differentiable Training
 =======================================================================
 Author : Yoon A Limsuwan
 License: MIT
 Year   : 2026
 
-Extension module to integrate L-functions into the RH ONE platform.
-Uses the Adapter Pattern to maintain the integrity of the original 
-'rh_one.py' framework without requiring modifications.
+Fully differentiable extension of RH ONE for training SSC dynamics
+to match GUE statistics under the asymptotic zero density of an
+arbitrary L-function.
+
+Usage:
+  python grh_one.py --degree 1 --conductor 5 --epochs 200 --N 2000
 """
 
-import numpy as np
-import torch
 import math
+import torch
+import torch.nn as nn
+from torch.optim import Adam
+import numpy as np
 
-# Import the original RH ONE framework
+# Import RH ONE as the core engine
 try:
     import rh_one as rh
 except ImportError:
-    raise ImportError("Could not find 'rh_one.py'. Please ensure it is in the same directory.")
+    raise ImportError("rh_one.py must be in the same directory.")
 
 # =====================================================================
-# 1. Mathematical Core for L-Functions
+# 1. L‑Function Definition
 # =====================================================================
 class GeneralizedLFunction:
-    """Representational class for any L-function (e.g., Dirichlet L-functions)."""
-    def __init__(self, name: str, degree: int = 1, conductor: float = 1.0):
+    """Container for L‑function metadata (degree, conductor)."""
+    def __init__(self, name: str = "L-function", degree: int = 1, conductor: float = 1.0):
         self.name = name
-        self.d = degree        # L-function degree
-        self.q = conductor     # L-function conductor
+        self.d = degree
+        self.q = conductor
 
-    def asymptotic_density_np(self, t: np.ndarray) -> np.ndarray:
-        """Calculate the smooth asymptotic counting density (NumPy)."""
-        return (self.d / (2 * np.pi)) * np.log(t / (2 * np.pi)) + (1 / (2 * np.pi)) * np.log(self.q)
-
-    def asymptotic_density_torch(self, t: torch.Tensor) -> torch.Tensor:
-        """Calculate the smooth asymptotic counting density (PyTorch)."""
+    def density_torch(self, t: torch.Tensor) -> torch.Tensor:
+        """Asymptotic zero density (PyTorch, differentiable)."""
         return (self.d / (2 * math.pi)) * torch.log(t / (2 * math.pi)) + (1 / (2 * math.pi)) * math.log(self.q)
 
-# =====================================================================
-# 2. GRH-Adjusted Unfolding Functions
-# =====================================================================
-def unfold_l_zeros_numpy(zeros: np.ndarray, l_func: GeneralizedLFunction) -> np.ndarray:
-    """Unfold zeros using the specific density of the given L-Function (NumPy)."""
-    sorted_z = np.sort(zeros)
-    spacings = np.diff(sorted_z)
-    midpoints = (sorted_z[:-1] + sorted_z[1:]) / 2.0
-    density = l_func.asymptotic_density_np(midpoints)
-    return spacings * density
-
-def unfold_l_zeros_torch(zeros: torch.Tensor, l_func: GeneralizedLFunction) -> torch.Tensor:
-    """Unfold zeros using the specific density of the given L-Function (PyTorch)."""
-    sorted_z, _ = torch.sort(zeros)
-    spacings = sorted_z[:, 1:] - sorted_z[:, :-1]
-    midpoints = (sorted_z[:, :-1] + sorted_z[:, 1:]) / 2.0
-    density = l_func.asymptotic_density_torch(midpoints)
-    return spacings * density
 
 # =====================================================================
-# 3. The Corrected GRH Adapter Pipeline
+# 2. Differentiable Unfolding for L‑Functions
 # =====================================================================
-def run_grh_pipeline(l_func: GeneralizedLFunction, start_index: int = 100, num_zeros: int = 200, steps: int = 150):
+def unfold_l_positions_torch(sorted_positions: torch.Tensor,
+                             l_func: GeneralizedLFunction) -> torch.Tensor:
     """
-    Runs the full SSC simulation pipeline by processing data according to 
-    the properties of the chosen L-Function, then passing it into the 
-    original SSCSimulator.
+    Convert sorted particle positions into cumulative unfolded positions
+    using the L‑function asymptotic density.
 
-    Important: The SSC output positions are mapped back to the original 
-    unfolded cumulative scale to ensure consistent unfolding.
+    Args:
+        sorted_positions: (batch, N) sorted raw positions (e.g. SSC output).
+        l_func: L‑function density object.
+
+    Returns:
+        (batch, N) cumulative unfolded positions (first column = 0).
     """
-    print(f"--- Starting GRH ONE Pipeline for: {l_func.name} (d={l_func.d}, q={l_func.q}) ---")
-    device = rh.get_device("cpu")
+    spacings = sorted_positions[:, 1:] - sorted_positions[:, :-1]
+    midpoints = (sorted_positions[:, :-1] + sorted_positions[:, 1:]) / 2.0
+    density = l_func.density_torch(midpoints)
+    unfolded_spacings = spacings * density
+    return torch.cat([
+        torch.zeros(sorted_positions.shape[0], 1, device=sorted_positions.device),
+        torch.cumsum(unfolded_spacings, dim=1)
+    ], dim=1)
 
-    # Step 1: Retrieve zeros from the original Riemann zeta code (we'll treat them as placeholder
-    #          for L-function zeros for demonstration; in a real scenario you'd supply actual L-function zeros)
-    print("1. Processing zeros (using Riemann zeros as surrogate)...")
-    t_start = rh.gram_point_fast(start_index)
-    zeros_raw = rh.find_zeros_gram(start_index, num_zeros, t_start=t_start)
 
-    # Step 2: Unfold zeros using the L-function specific formula
-    print("2. Unfolding zeros using L-function parameters...")
-    s_np = unfold_l_zeros_numpy(zeros_raw, l_func)
-    # Cumulative unfolded positions (integrated density)
-    unfolded_positions = np.cumsum(np.insert(s_np, 0, 0))
-    z_min, z_max = unfolded_positions[0], unfolded_positions[-1]
+# =====================================================================
+# 3. Fully Differentiable Trainer for GRH
+# =====================================================================
+class GRHTrainer:
+    """
+    Train SSC parameters to produce GUE statistics under the unfolding
+    prescribed by a given L‑function.
+    """
+    def __init__(self,
+                 simulator: rh.SSCSimulator,
+                 l_func: GeneralizedLFunction,
+                 device: str = 'cpu',
+                 use_ddp: bool = False):
+        self.device = device
+        self.l_func = l_func
+        self.use_ddp = use_ddp
 
-    # Step 3: Prepare for SSC simulation.
-    # We'll use the original simulator with a fixed domain [XMIN, XMAX].
-    XMIN, XMAX = -5.0, 5.0
-    N_particles = len(unfolded_positions) - 1  # number of spacings = number of zeros
-    print("3. Loading into SSCSimulator core...")
-    sim = rh.SSCSimulator(
-        N_particles=N_particles,
-        XMIN=XMIN, XMAX=XMAX, NGRID=512, device=device
+        if use_ddp:
+            rank, world_size = rh.setup_distributed()
+            self.rank = rank
+            self.world_size = world_size
+            self.sim = nn.parallel.DistributedDataParallel(simulator,
+                                                          device_ids=[rank] if torch.cuda.is_available() else None)
+        else:
+            self.rank = 0
+            self.world_size = 1
+            self.sim = simulator
+
+        self.optimizer = Adam(simulator.parameters(), lr=0.01)
+
+    def compute_loss(self, positions: torch.Tensor) -> torch.Tensor:
+        """Compute GUE losses using L‑function unfolding."""
+        # Sort positions (differentiable sort via torch.sort)
+        sorted_pos, _ = torch.sort(positions, dim=1)
+        # Unfold with L‑function density
+        unfolded_pos = unfold_l_positions_torch(sorted_pos, self.l_func)
+
+        # Now compute the same statistical losses as in RH ONE
+        spacings = unfolded_pos[:, 1:] - unfolded_pos[:, :-1]
+        loss_s = rh.spacing_loss(spacings)
+        loss_pc = rh.pair_correlation_loss(unfolded_pos)
+        loss_sff = rh.spectral_form_factor_loss(unfolded_pos)
+        loss_nv = rh.number_variance_loss(unfolded_pos)
+
+        return loss_s + 0.5 * loss_pc + 0.1 * loss_sff + 0.2 * loss_nv
+
+    def train_step(self, num_sim_steps: int = 100, batch_size: int = 1) -> float:
+        self.sim.train()
+        self.optimizer.zero_grad()
+
+        # Initialise particles uniformly (differentiable sampling)
+        if self.use_ddp:
+            x = self.sim.module.initial_uniform(batch_size)
+            for _ in range(num_sim_steps):
+                x = self.sim(x)
+        else:
+            x = self.sim.initial_uniform(batch_size)
+            for _ in range(num_sim_steps):
+                x = self.sim.step(x)
+
+        loss = self.compute_loss(x)
+        loss.backward()
+        self.optimizer.step()
+        return loss.item()
+
+    def train(self, epochs: int = 100, num_sim_steps: int = 100, batch_size: int = 1):
+        for epoch in range(epochs):
+            loss = self.train_step(num_sim_steps, batch_size)
+            if self.rank == 0 and epoch % 10 == 0:
+                print(f"Epoch {epoch:4d} | Loss: {loss:.6f}")
+
+
+# =====================================================================
+# 4. Example Usage & CLI
+# =====================================================================
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="GRH ONE — Fully Differentiable Training")
+    parser.add_argument('--degree', type=int, default=1, help="L‑function degree")
+    parser.add_argument('--conductor', type=float, default=1.0, help="L‑function conductor")
+    parser.add_argument('--N', type=int, default=2000, help="Number of SSC particles")
+    parser.add_argument('--XMIN', type=float, default=-5.0)
+    parser.add_argument('--XMAX', type=float, default=5.0)
+    parser.add_argument('--NGRID', type=int, default=512)
+    parser.add_argument('--epochs', type=int, default=100)
+    parser.add_argument('--steps', type=int, default=100)
+    parser.add_argument('--batch-size', type=int, default=1)
+    parser.add_argument('--device', type=str, default='cpu')
+    parser.add_argument('--use-ddp', action='store_true')
+    parser.add_argument('--seed', type=int, default=42)
+    args = parser.parse_args()
+
+    torch.manual_seed(args.seed)
+    device = rh.get_device(args.device)
+
+    # Define L‑function
+    l_func = GeneralizedLFunction(
+        name=f"L(d={args.degree}, q={args.conductor})",
+        degree=args.degree,
+        conductor=args.conductor
     )
 
-    # Convert to tensor and map to SSC domain using initial_zeros
-    unfolded_tensor = torch.tensor(unfolded_positions, dtype=torch.float32, device=device)
-    x0 = sim.initial_zeros(unfolded_tensor).unsqueeze(0)  # shape (1, N_particles)
+    # Build SSC simulator (same as in RH ONE)
+    sim = rh.SSCSimulator(
+        N_particles=args.N,
+        XMIN=args.XMIN, XMAX=args.XMAX,
+        NGRID=args.NGRID,
+        alpha=0.8, beta=0.05, gamma=0.0, sigma=0.3, dt=0.01,
+        device=device
+    )
 
-    # Step 4: Run SSC dynamics
-    print(f"4. Running SSC simulation for {steps} steps...")
-    x_final = sim.simulate(num_steps=steps, initial_x=x0)  # shape (1, N_particles)
-
-    # Step 5: Map SSC output back to cumulative unfolded positions
-    # The mapping in initial_zeros is: x_scaled = (u - z_min)/(z_max - z_min) * (XMAX - XMIN) + XMIN
-    # So we invert: u = (x_scaled - XMIN) * (z_max - z_min)/(XMAX - XMIN) + z_min
-    if z_max == z_min:
-        raise ValueError("Zero range too small; cannot invert scaling.")
-    scaling = (z_max - z_min) / (XMAX - XMIN)
-    u_ssc = (x_final - XMIN) * scaling + z_min
-    # Sort for unfolding (simulator does not guarantee sorted output)
-    u_ssc_sorted, _ = torch.sort(u_ssc, dim=1)
-    # Unfolded spacings are just the differences of cumulative positions
-    spacings_ssc = (u_ssc_sorted[:, 1:] - u_ssc_sorted[:, :-1]).flatten().cpu().numpy()
-
-    # Step 6: Compare statistics
-    print("\n[Statistical Results]")
-    print(f"L-Function Zeros Unfolded Mean Spacing (Target: ~1.0): {s_np.mean():.4f}")
-    print(f"SSC Simulated Unfolded Mean Spacing:                  {spacings_ssc.mean():.4f}")
-    print("------------------------------------------------------------------")
-
-    return s_np, spacings_ssc
-
-if __name__ == "__main__":
-    # Example: Dirichlet L-function with conductor q=5
-    dirichlet_l = GeneralizedLFunction(name="Dirichlet L-Function (q=5)", degree=1, conductor=5.0)
-
-    # Execute pipeline (using Riemann zeros as proxy; replace with true L-function zeros for real research)
-    run_grh_pipeline(l_func=dirichlet_l, start_index=1000, num_zeros=300, steps=100)
+    # Create trainer and run
+    trainer = GRHTrainer(sim, l_func, device=device, use_ddp=args.use_ddp)
+    print(f"Training SSC for {l_func.name} ...")
+    trainer.train(epochs=args.epochs, num_sim_steps=args.steps, batch_size=args.batch_size)
