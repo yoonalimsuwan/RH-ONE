@@ -523,6 +523,7 @@ python bsd_one.py --label 37a1 --conductor 37 --rank 1 --zeros-file zeros_37a1.t
 ⚙️ Command‑Line Arguments
 
 Argument Type Default Description
+
 --label str "11a1" Cremona label of the elliptic curve
 --conductor int 11 Conductor N of the curve
 --rank int 0 Analytic rank (order of vanishing at s = 1)
