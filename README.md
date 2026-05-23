@@ -559,7 +559,7 @@ MIT License — see LICENSE in the root directory.
 
 Happy exploring the Generalized Riemann Hypothesis with differentiable dynamics!
 
-```
+`
 
 ``
 # BSD ONE — Fully Differentiable Extension for the Birch & Swinnerton-Dyer Conjecture
