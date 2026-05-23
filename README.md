@@ -394,6 +394,45 @@ In short, RH ONE does not (yet) bridge the three‑layer impasse. But it provide
 
 > ⚠️ All statements about potential speedups, deterministic sieving, or $\mathcal{O}(1)$ factoring remain **speculative** and are included solely to frame long‑term research questions. RH ONE contains no factorisation routine and does not threaten any deployed cryptographic system.
 
+## 🌐 GRH ONE — Extension for Generalized Riemann Hypothesis
+**An adapter framework to extend the RH ONE platform to arbitrary L-functions.**
+While RH ONE provides the engine for studying the Riemann zeta function, **GRH ONE** serves as an architectural adapter that generalizes this framework to support a broader class of L-functions (e.g., Dirichlet L-functions, modular forms) without altering the core computational pipeline.
+### ✨ Key Features
+ * **Universal L-function Support**
+   Easily specify the **Degree (d)** and **Conductor (q)** of any L-function. The module automatically adjusts the asymptotic density calculations, allowing the SSC simulator to operate on L-function zeros just as it does on Riemann zeta zeros.
+ * **Zero-Modification Adapter Pattern**
+   Uses an "Adapter" architecture that wraps existing modules in rh_one.py. This allows you to leverage the full suite of differentiable GUE statistics, Hilbert transforms, and SSC dynamics without modifying a single line of the original source code.
+ * **Seamless GUE Universality Testing**
+   Provides the mathematical bridges necessary to test if the zeros of Dirichlet L-functions (and others) obey the same GUE universality predicted by the Generalized Riemann Hypothesis (GRH), using the exact same differentiable loss functions developed for RH ONE.
+### 📦 Installation
+Ensure grh_one.py is placed in the same directory as your existing rh_one.py. No additional dependencies are required beyond those listed for RH ONE.
+### 🚀 Quick Start
+Using GRH ONE to simulate and test an L-function (e.g., Dirichlet with q=5):
+```python
+from grh_one import GeneralizedLFunction, run_grh_pipeline
+
+# 1. Define the L-function parameters (d=1, q=5)
+dirichlet_l = GeneralizedLFunction(name="Dirichlet L-Function (q=5)", degree=1, conductor=5.0)
+
+# 2. Run the pipeline (Integrates automatically with RH ONE's SSCSimulator)
+# This processes zeros, unfolds them using the L-function density, 
+# and runs the SSC simulation.
+s_np, spacings_ssc = run_grh_pipeline(
+    l_func=dirichlet_l, 
+    start_index=1000, 
+    num_zeros=300, 
+    steps=100
+)
+
+```
+### 🧠 Architecture & Integration
+GRH ONE acts as an intermediary layer between your chosen L-function and the core RH ONE platform:
+ 1. **GeneralizedLFunction Class**: Acts as the interface. It calculates the correct asymptotic counting density based on d and q.
+ 2. **unfold_l_zeros Overrides**: Replaces the standard density function (which is hardcoded for the Riemann zeta function) with the appropriate L-function density formula.
+ 3. **Pipeline Injection**: The adapter feeds the processed, unfolded zeros into the original SSCSimulator, which continues to treat the data as a GUE-universal particle system.
+This approach ensures that as you expand your research into new L-functions, the underlying physics (SSC dynamics) and statistical measures (GUE losses) remain robust, verified, and reusable.
+*For further details on the theoretical underpinnings of GUE universality in L-functions, please refer to the main RH ONE references and the supplementary research documentation on spectral density scaling for Dirichlet L-functions.*
+
 📬 Contact
 
 Author: Yoon A Limsuwan
