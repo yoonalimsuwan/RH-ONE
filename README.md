@@ -394,44 +394,172 @@ In short, RH ONE does not (yet) bridge the three‑layer impasse. But it provide
 
 > ⚠️ All statements about potential speedups, deterministic sieving, or $\mathcal{O}(1)$ factoring remain **speculative** and are included solely to frame long‑term research questions. RH ONE contains no factorisation routine and does not threaten any deployed cryptographic system.
 
-## 🌐 GRH ONE — Extension for Generalized Riemann Hypothesis
-**An adapter framework to extend the RH ONE platform to arbitrary L-functions.**
-While RH ONE provides the engine for studying the Riemann zeta function, **GRH ONE** serves as an architectural adapter that generalizes this framework to support a broader class of L-functions (e.g., Dirichlet L-functions, modular forms) without altering the core computational pipeline.
-### ✨ Key Features
- * **Universal L-function Support**
-   Easily specify the **Degree (d)** and **Conductor (q)** of any L-function. The module automatically adjusts the asymptotic density calculations, allowing the SSC simulator to operate on L-function zeros just as it does on Riemann zeta zeros.
- * **Zero-Modification Adapter Pattern**
-   Uses an "Adapter" architecture that wraps existing modules in rh_one.py. This allows you to leverage the full suite of differentiable GUE statistics, Hilbert transforms, and SSC dynamics without modifying a single line of the original source code.
- * **Seamless GUE Universality Testing**
-   Provides the mathematical bridges necessary to test if the zeros of Dirichlet L-functions (and others) obey the same GUE universality predicted by the Generalized Riemann Hypothesis (GRH), using the exact same differentiable loss functions developed for RH ONE.
-### 📦 Installation
-Ensure grh_one.py is placed in the same directory as your existing rh_one.py. No additional dependencies are required beyond those listed for RH ONE.
-### 🚀 Quick Start
-Using GRH ONE to simulate and test an L-function (e.g., Dirichlet with q=5):
-```python
-from grh_one import GeneralizedLFunction, run_grh_pipeline
+``
+# GRH ONE — Fully Differentiable Extension for the Generalized Riemann Hypothesis
 
-# 1. Define the L-function parameters (d=1, q=5)
-dirichlet_l = GeneralizedLFunction(name="Dirichlet L-Function (q=5)", degree=1, conductor=5.0)
+**GRH ONE** is a fully differentiable research module built on top of the **RH ONE** platform.  
+It extends the `SSCSimulator` and statistical toolkit to study **general L‑functions** (Dirichlet, modular, etc.) under the **Generalized Riemann Hypothesis (GRH)**, enabling gradient‑based training of a dynamical system to reproduce GUE statistics under any given asymptotic zero density.
 
-# 2. Run the pipeline (Integrates automatically with RH ONE's SSCSimulator)
-# This processes zeros, unfolds them using the L-function density, 
-# and runs the SSC simulation.
-s_np, spacings_ssc = run_grh_pipeline(
-    l_func=dirichlet_l, 
-    start_index=1000, 
-    num_zeros=300, 
-    steps=100
-)
+---
+
+## 🔬 Motivation
+
+L‑functions of degree `d` and conductor `q` are expected (via the Katz–Sarnak philosophy) to have non‑trivial zeros whose statistical properties match the **Gaussian Unitary Ensemble (GUE)**.  
+Their asymptotic zero density is:
 
 ```
-### 🧠 Architecture & Integration
-GRH ONE acts as an intermediary layer between your chosen L-function and the core RH ONE platform:
- 1. **GeneralizedLFunction Class**: Acts as the interface. It calculates the correct asymptotic counting density based on d and q.
- 2. **unfold_l_zeros Overrides**: Replaces the standard density function (which is hardcoded for the Riemann zeta function) with the appropriate L-function density formula.
- 3. **Pipeline Injection**: The adapter feeds the processed, unfolded zeros into the original SSCSimulator, which continues to treat the data as a GUE-universal particle system.
-This approach ensures that as you expand your research into new L-functions, the underlying physics (SSC dynamics) and statistical measures (GUE losses) remain robust, verified, and reusable.
-*For further details on the theoretical underpinnings of GUE universality in L-functions, please refer to the main RH ONE references and the supplementary research documentation on spectral density scaling for Dirichlet L-functions.*
+
+ρ(t) = (d/(2π)) · log(t/(2π)) + (1/(2π)) · log q
+
+```
+
+GRH ONE provides a **differentiable pipeline** that unfolds simulated particle positions using this exact density, computes GUE‑based statistical losses, and back‑propagates through the entire simulation to **learn** the parameters of the SOC kernel and the drift‑diffusion dynamics.
+
+---
+
+## 🧩 Relationship with RH ONE & BSD ONE
+
+| Module   | Purpose | L‑function class |
+|----------|---------|------------------|
+| `rh_one` | Core: Riemann zeta zeros, SSC simulator, statistical losses | Riemann zeta (d=1, q=1) |
+| `grh_one` | General L‑function extension (any degree & conductor) | Degree `d`, conductor `q` |
+| `bsd_one` | Specialised extension for elliptic curves (d=2, optional rank) | Degree 2, conductor `N`, rank `r` |
+
+**GRH ONE** generalises `rh_one` by replacing the fixed Riemann‑zeta unfolding with a **parameterised asymptotic density**. `BSD ONE` can be seen as a special case of GRH ONE with `d=2` and an additional rank‑aware loss.
+
+---
+
+## ✨ Features
+
+- **Differentiable unfolding** for any L‑function with degree `d` and conductor `q`:
+```
+
+ρ(t) = (d/(2π)) · log(t/(2π)) + (1/(2π)) · log q
+
+```
+- **End‑to‑end training**: SSC simulator → unfolding → GUE losses → backpropagation.
+- **Learnable SOC kernel** (`Cs`, `λ`, `α`, `τ`) and drift/noise coefficients.
+- **All standard spectral statistics**: nearest‑neighbour spacing, pair correlation, spectral form factor, number variance — fully differentiable.
+- **Multi‑GPU training** via PyTorch Distributed Data Parallel.
+- **Lightweight**: runs on CPU, CUDA, MPS, and Ascend NPU.
+
+---
+
+## 📥 Installation
+
+Place `grh_one.py` in the same directory as the core module `rh_one.py`.
+
+```bash
+git clone https://github.com/yoonalimsuwan/rh-one
+cd rh-one
+# ensure rh_one.py is present
+wget https://raw.githubusercontent.com/yoonalimsuwan/rh-one/main/grh_one.py
+```
+
+Dependencies:
+
+· Python ≥ 3.8
+· PyTorch ≥ 1.12
+· NumPy, SciPy
+· (Optional) Matplotlib
+
+```bash
+pip install torch numpy scipy matplotlib
+```
+
+---
+
+🚀 Quick Start
+
+Train an SSC system to mimic the GUE statistics of a Dirichlet L‑function (degree 1, conductor 5):
+
+```bash
+python grh_one.py --degree 1 --conductor 5 --epochs 200 --N 2000
+```
+
+For an elliptic curve L‑function (degree 2, conductor 11), you can either use grh_one.py directly or the specialised bsd_one.py:
+
+```bash
+python grh_one.py --degree 2 --conductor 11 --epochs 200 --N 2000
+```
+
+---
+
+⚙️ Command‑Line Arguments
+
+Argument Type Default Description
+
+--degree int 1 Degree d of the L‑function
+--conductor float 1.0 Conductor q of the L‑function
+--N int 2000 Number of SSC particles
+--XMIN, --XMAX float -5.0, 5.0 Particle domain bounds
+--NGRID int 512 Grid resolution for density estimation
+--epochs int 100 Number of training epochs
+--steps int 100 Simulation steps per epoch
+--batch-size int 1 Batch size
+--device str cpu cpu, cuda, mps, or ascend
+--use-ddp flag False Enable distributed training
+--seed int 42 Random seed
+
+---
+
+🧠 Training Pipeline
+
+1. Initialisation – particles uniformly sampled in [XMIN, XMAX].
+2. SSC dynamics – drift‑diffusion with learnable SOC kernel, differentiable density via soft histogram.
+3. Unfolding – positions sorted, then cumulative unfolded positions computed with the general density formula.
+4. Loss computation – spacing (Wigner), pair correlation, spectral form factor, number variance.
+5. Backpropagation – all parameters of the simulator and SOC kernel are updated via Adam.
+
+---
+
+📊 Output & Evaluation
+
+The training loop prints the total loss every 10 epochs. After training, the simulator can be used to generate spectra and compare histograms, pair correlation, and number variance with theoretical GUE predictions.
+
+Save the trained model:
+
+```python
+torch.save(sim.state_dict(), "grh_d1_q5_weights.pth")
+```
+
+---
+
+🔬 Research Directions
+
+· Do different L‑function classes require different SOC parameters to achieve GUE statistics?
+· Is there a universal critical state that reproduces GUE regardless of degree or conductor?
+· Train on multiple L‑functions simultaneously to discover shared dynamical features.
+· Extend to degree‑3 and degree‑4 L‑functions (e.g., symmetric square lifts) by simply changing the --degree argument.
+
+---
+
+📜 Citation
+
+If you use GRH ONE, please cite:
+
+Yoon A. Limsuwan. "RH ONE — A Fully Differentiable Riemann Hypothesis & SSC Research Platform." 2026.
+and the GRH ONE extension module.
+
+---
+
+📄 License
+
+MIT License — see LICENSE in the root directory.
+
+---
+
+🙏 Acknowledgements
+
+· RH ONE and BSD ONE developers for the original differentiable simulator.
+· LMFDB for providing L‑function data.
+· The PyTorch team for automatic differentiation.
+
+---
+
+Happy exploring the Generalized Riemann Hypothesis with differentiable dynamics!
+
+```
 
 ``
 # BSD ONE — Fully Differentiable Extension for the Birch & Swinnerton-Dyer Conjecture
