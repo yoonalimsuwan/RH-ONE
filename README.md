@@ -433,6 +433,199 @@ GRH ONE acts as an intermediary layer between your chosen L-function and the cor
 This approach ensures that as you expand your research into new L-functions, the underlying physics (SSC dynamics) and statistical measures (GUE losses) remain robust, verified, and reusable.
 *For further details on the theoretical underpinnings of GUE universality in L-functions, please refer to the main RH ONE references and the supplementary research documentation on spectral density scaling for Dirichlet L-functions.*
 
+``
+# BSD ONE — Fully Differentiable Extension for the Birch & Swinnerton-Dyer Conjecture
+
+**BSD ONE** is a fully differentiable research module built on top of the **RH ONE** platform.  
+It extends the `SSCSimulator` and statistical toolkit to the study of **elliptic curve L‑functions** under the Generalized Riemann Hypothesis (GRH), focusing on the spectral statistics conjectured by Katz–Sarnak and their possible connection to the **Birch & Swinnerton-Dyer (BSD) conjecture**.
+
+---
+
+## 🔬 Motivation
+
+Elliptic curve L‑functions have **degree 2** and a conductor `N`. Their non‑trivial zeros (on the critical line Re(s) = ½) are expected to follow the **Gaussian Unitary Ensemble (GUE)** statistics.  
+BSD ONE provides a **differentiable dynamical system** (SSC – Semantic State Contraction) that can be trained to reproduce those GUE statistics under the correct asymptotic zero density.
+
+Because the entire pipeline (simulation → unfolding → statistical loss) is differentiable, one can use gradient descent to **learn the parameters of the SOC kernel, drift terms, and noise amplitude** that best mimic the zero statistics of a given elliptic curve.
+
+---
+
+## 🧩 Relationship with RH ONE & GRH ONE
+
+| Module      | Purpose | L‑function class |
+|-------------|---------|------------------|
+| `rh_one` | Core: Riemann zeta zeros, SSC simulator, statistical losses | Riemann zeta (degree 1, conductor 1) |
+| `grh_one` | Extension to general degree‑1 L‑functions (Dirichlet, etc.) | Degree 1, arbitrary conductor |
+| `bsd_one` | Specialised extension for elliptic curve L‑functions (degree 2) | Degree 2, arbitrary conductor, optional rank |
+
+**BSD ONE** reuses the `SSCSimulator` and all differentiable losses from `rh_one`, only replacing the **unfolding function** with the correct degree‑2 asymptotic density and adding optional **rank‑aware** loss terms.
+
+---
+
+## ✨ Features
+
+- **Differentiable unfolding** using the exact asymptotic density for degree‑2 L‑functions:
+```
+
+ρ(t) = (1/π) · log(t/(2π)) + (1/(2π)) · log N
+
+```
+- **End‑to‑end training**: positions from the SSC simulator are automatically unfolded and compared against GUE predictions.
+- **Empirical target support**: optionally load real zero data (e.g., from LMFDB) and minimise the difference between SSC and empirical spacing histograms.
+- **Rank hint loss**: a heuristic loss term that encourages more low‑lying zeros for curves with positive analytic rank.
+- **Multi‑GPU training** via PyTorch Distributed Data Parallel.
+- **Lightweight**: runs on CPU, CUDA, MPS, and Ascend NPU.
+
+---
+
+## 📥 Installation
+
+Place `bsd_one.py` in the same directory as the core module `rh_one.py`.
+
+```bash
+git clone https://github.com/yoonalimsuwan/RH-ONE
+cd rh-one
+# Make sure rh_one.py is present
+wget https://raw.githubusercontent.com/yourusername/rh-one/main/bsd_one.py
+```
+
+Dependencies:
+
+· Python ≥ 3.8
+· PyTorch ≥ 1.12
+· NumPy, SciPy
+· (Optional) Matplotlib for plotting
+
+Install via pip:
+
+```bash
+pip install torch numpy scipy matplotlib
+```
+
+---
+
+🚀 Quick Start
+
+Train an SSC system to mimic the GUE statistics of elliptic curve 11a1 (conductor 11, rank 0):
+
+```bash
+python bsd_one.py --label 11a1 --conductor 11 --rank 0 --epochs 200 --N 2000
+```
+
+If you have a file with true zero ordinates (imaginary parts, one per line), include the --zeros-file argument:
+
+```bash
+python bsd_one.py --label 37a1 --conductor 37 --rank 1 --zeros-file zeros_37a1.txt
+```
+
+---
+
+⚙️ Command‑Line Arguments
+
+Argument Type Default Description
+--label str "11a1" Cremona label of the elliptic curve
+--conductor int 11 Conductor N of the curve
+--rank int 0 Analytic rank (order of vanishing at s = 1)
+--zeros-file str None Path to a text file containing zero ordinates
+--N int 2000 Number of SSC particles
+--XMIN, --XMAX float -5.0, 5.0 Domain bounds for particle positions
+--NGRID int 512 Grid resolution for density estimation
+--epochs int 100 Number of training epochs
+--steps int 100 Number of SSC simulation steps per epoch
+--batch-size int 1 Batch size
+--device str cpu Device: cpu, cuda, mps, ascend
+--use-ddp flag False Enable distributed training
+--seed int 42 Random seed
+
+---
+
+🧠 Training Pipeline (What Happens Inside)
+
+1. Initialisation
+      Particles are uniformly drawn in [XMIN, XMAX].
+2. SSC Dynamics
+      Particles evolve under a drift‑diffusion process with a learnable SOC kernel. The density is estimated via a differentiable soft histogram.
+3. Unfolding
+      Sorted positions are transformed to cumulative unfolded positions using the degree‑2 density:
+   ```
+   ρ(t) = (1/π) · log(t/(2π)) + (1/(2π)) · log N
+   ```
+4. Loss Computation
+      Four standard GUE losses are computed on the unfolded spacings/positions:
+   · Nearest‑neighbour spacing loss (Wigner surmise)
+   · Pair correlation loss
+   · Spectral form factor (connected part) loss
+   · Number variance loss
+   If a --zeros-file is supplied, an additional histogram matching loss aligns the simulated spacing distribution with the real one.
+      If the curve has positive rank, a low‑lying spacing loss encourages a larger fraction of spacings in the first unit interval.
+5. Backpropagation
+      Gradients flow through the entire pipeline and update the SOC kernel parameters (Cs, λ, α, τ) and the drift/noise coefficients of the SSC simulator.
+
+---
+
+📁 Input File Format (Zeros)
+
+A text file with one imaginary‑part value per line. Comments (#) and blank lines are ignored.
+
+```
+# Zeros of elliptic curve 37a1 (imaginary parts)
+14.134725
+21.022040
+25.010858
+...
+```
+
+---
+
+📊 Output & Evaluation
+
+The training loop prints the loss every 10 epochs. After training, you can use the trained simulator to generate spectra and visually compare with GUE predictions or real zero data.
+
+The SSC simulator’s learned parameters can be saved:
+
+```python
+torch.save(sim.state_dict(), "bsd_11a1_weights.pth")
+```
+
+---
+
+🔬 Research Directions
+
+· Does the SSC model naturally produce GUE statistics for any degree‑2 L‑function?
+· Can the learned SOC parameters distinguish curves of different ranks?
+· Investigate the role of the rank loss: is the low‑lying zero density sufficient to signal the analytic rank?
+· Compare learned dynamics across many curves – is there a universal mechanism?
+· Extend to higher‑degree L‑functions (e.g., from modular forms) by changing the degree parameter and the density formula.
+
+---
+
+📜 Citation
+
+If you use BSD ONE in your research, please cite the core framework:
+
+Yoon A. Limsuwan. "RH ONE — A Fully Differentiable Riemann Hypothesis & SSC Research Platform." 2026.
+(and any relevant references for the elliptic curve L‑functions you use)
+
+---
+
+📄 License
+
+MIT License — see the LICENSE file in the root directory.
+
+---
+
+🙏 Acknowledgements
+
+· The RH ONE and GRH ONE developers for the original differentiable SSC simulator.
+· The LMFDB collaboration for providing elliptic curve zero data.
+· The PyTorch team for automatic differentiation.
+
+---
+
+Happy researching the BSD conjecture through the lens of self‑organised criticality!
+
+```
+
 📬 Contact
 
 Author: Yoon A Limsuwan
