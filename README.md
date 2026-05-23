@@ -549,14 +549,6 @@ MIT License — see LICENSE in the root directory.
 
 ---
 
-🙏 Acknowledgements
-
-· RH ONE and BSD ONE developers for the original differentiable simulator.
-· LMFDB for providing L‑function data.
-· The PyTorch team for automatic differentiation.
-
----
-
 Happy exploring the Generalized Riemann Hypothesis with differentiable dynamics!
 
 `
