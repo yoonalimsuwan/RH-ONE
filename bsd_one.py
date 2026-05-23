@@ -1,92 +1,72 @@
-=======================================================================
-BSD ONE — Birch & Swinnerton-Dyer Conjecture Extension Module
-=======================================================================
+=================================================================
+BSD ONE — Fully Differentiable Birch & Swinnerton-Dyer Extension
+=================================================================
 Author : Yoon A Limsuwan
 License: MIT
 Year   : 2026
 
-Extension module to integrate Elliptic Curve L-functions into the 
-RH ONE / GRH ONE platform. Follows the Adapter Pattern to keep 
-the original framework unchanged.
+Fully differentiable training of SSC dynamics to emulate GUE statistics
+of elliptic curve L‑function zeros. Supports loading real zero data
+and optional rank‑aware loss.
 
-Features:
-  • EllipticCurveLFunction with degree 2 and conductor N
-  • Unfolding using the correct asymptotic density
-  • Interface to load zeros from LMFDB-formatted files or precomputed arrays
-  • Full SSC pipeline for elliptic curve zero statistics
-  • BSD-specific analysis: rank hint from low-lying zero density (optional)
+Usage:
+  python bsd_one.py --label 11a1 --conductor 11 --rank 0 --epochs 200 --N 2000
+  python bsd_one.py --label 37a1 --conductor 37 --rank 1 --zeros-file zeros_37a1.txt
 """
 
-import numpy as np
-import torch
 import math
+import torch
+import torch.nn as nn
+from torch.optim import Adam
+import numpy as np
 import os
+from typing import Optional
 
-# Import the original frameworks (they must be in the same directory)
 try:
     import rh_one as rh
 except ImportError:
-    raise ImportError("Could not find 'rh_one.py'. Please ensure it is in the same directory.")
-
-try:
-    import grh_one as grh
-except ImportError:
-    # If grh_one is not present, we fall back to the basic GeneralizedLFunction definition
-    class GeneralizedLFunction:
-        """Minimal L-function class if grh_one is not available."""
-        def __init__(self, name, degree=1, conductor=1.0):
-            self.name = name
-            self.d = degree
-            self.q = conductor
-        def asymptotic_density_np(self, t):
-            return (self.d / (2 * np.pi)) * np.log(t / (2 * np.pi)) + (1 / (2 * np.pi)) * np.log(self.q)
-        def asymptotic_density_torch(self, t):
-            return (self.d / (2 * math.pi)) * torch.log(t / (2 * math.pi)) + (1 / (2 * math.pi)) * math.log(self.q)
+    raise ImportError("rh_one.py is required.")
 
 # =====================================================================
 # 1. Elliptic Curve L‑Function Definition
 # =====================================================================
 class EllipticCurveLFunction:
-    """
-    Represents the L‑function of an elliptic curve E/Q.
-
-    Parameters
-    ----------
-    label : str
-        Cremona label (e.g., '11a1').
-    conductor : int
-        Conductor N of the curve.
-    rank : int, optional
-        Analytic rank (order of vanishing at s=1). Default 0.
-    degree : int
-        L‑function degree; fixed to 2 for elliptic curves.
-    """
+    """L‑function of an elliptic curve E/Q."""
     def __init__(self, label: str, conductor: int, rank: int = 0):
         self.label = label
         self.conductor = float(conductor)
         self.rank = rank
-        self.degree = 2  # always 2 for elliptic curves
+        self.degree = 2
 
     @property
     def name(self):
-        return f"Elliptic Curve {self.label} (cond={int(self.conductor)}, rank={self.rank})"
+        return f"EC {self.label} (q={int(self.conductor)}, r={self.rank})"
 
-    def asymptotic_density_np(self, t: np.ndarray) -> np.ndarray:
-        """Asymptotic zero density for a degree-2 L‑function (NumPy)."""
-        return (self.degree / (2 * np.pi)) * np.log(t / (2 * np.pi)) + (1 / (2 * np.pi)) * np.log(self.conductor)
-
-    def asymptotic_density_torch(self, t: torch.Tensor) -> torch.Tensor:
-        """Asymptotic zero density for a degree-2 L‑function (PyTorch)."""
-        return (self.degree / (2 * math.pi)) * torch.log(t / (2 * math.pi)) + (1 / (2 * math.pi)) * math.log(self.conductor)
+    def density_torch(self, t: torch.Tensor) -> torch.Tensor:
+        """Differentiable asymptotic zero density for a degree‑2 L‑function."""
+        return (self.degree / (2 * math.pi)) * torch.log(t / (2 * math.pi)) \
+               + (1 / (2 * math.pi)) * math.log(self.conductor)
 
 # =====================================================================
-# 2. Utility: Load zeros from file or simulate (for demonstration)
+# 2. Differentiable Unfolding for EC L‑functions
+# =====================================================================
+def unfold_ec_positions_torch(sorted_positions: torch.Tensor,
+                              curve: EllipticCurveLFunction) -> torch.Tensor:
+    """Convert sorted particle positions to cumulative unfolded positions."""
+    spacings = sorted_positions[:, 1:] - sorted_positions[:, :-1]
+    midpoints = (sorted_positions[:, :-1] + sorted_positions[:, 1:]) / 2.0
+    density = curve.density_torch(midpoints)
+    unfolded_spacings = spacings * density
+    return torch.cat([
+        torch.zeros(sorted_positions.shape[0], 1, device=sorted_positions.device),
+        torch.cumsum(unfolded_spacings, dim=1)
+    ], dim=1)
+
+# =====================================================================
+# 3. Data Loading Utilities (non‑differentiable, for target creation)
 # =====================================================================
 def load_zeros_lmfdb(filepath: str) -> np.ndarray:
-    """
-    Load zeros from a file in LMFDB format: one float per line (imaginary parts).
-    Comments (starting with #) are ignored.
-    """
+    """Load zero ordinates (imaginary parts) from a text file."""
     zeros = []
     with open(filepath, 'r') as f:
         for line in f:
@@ -96,158 +76,176 @@ def load_zeros_lmfdb(filepath: str) -> np.ndarray:
                     zeros.append(float(line))
                 except ValueError:
                     continue
-    return np.array(sorted(zeros))
+    return np.sort(np.array(zeros))
 
-def generate_mock_zeros(curve: EllipticCurveLFunction, num_zeros: int,
-                        t_start: float = 10.0, seed: int = 42) -> np.ndarray:
-    """
-    Generate mock zeros using the GUE prediction and the correct density.
-    This is NOT a replacement for true zeros; it is for quick testing only.
-    """
-    rng = np.random.default_rng(seed)
-    # Approximate cumulative density: N(t) ≈ (degree/π) t log(t/2πe) + ...
-    # We integrate numerically to invert.
-    t_max = t_start + 50 * num_zeros  # rough
-    t_vals = np.linspace(t_start, t_max, 50000)
-    dens = curve.asymptotic_density_np(t_vals)
-    cum_dens = np.cumsum(dens) * (t_vals[1] - t_vals[0])
-    cum_dens -= cum_dens[0]
-    # Normalize to integer counts
-    cum_dens = cum_dens / cum_dens[-1] * (num_zeros + 10)  # extra margin
-    # Uniformly sample from expected cumulative function
-    y = np.sort(rng.uniform(0, num_zeros, size=num_zeros))
-    zeros = np.interp(y, cum_dens, t_vals)
-    # Add small GUE-like fluctuations (optional)
-    return zeros
-
-# =====================================================================
-# 3. Unfolding for Elliptic Curve L‑Functions
-# =====================================================================
-def unfold_ec_zeros_np(zeros: np.ndarray, curve: EllipticCurveLFunction) -> np.ndarray:
-    """Unfold zeros of an elliptic curve L‑function (NumPy)."""
+def unfold_zeros_np(zeros: np.ndarray, curve: EllipticCurveLFunction) -> np.ndarray:
+    """Unfold zero ordinates using EC density (NumPy)."""
     sorted_z = np.sort(zeros)
     spacings = np.diff(sorted_z)
     midpoints = (sorted_z[:-1] + sorted_z[1:]) / 2.0
-    density = curve.asymptotic_density_np(midpoints)
-    return spacings * density
-
-def unfold_ec_zeros_torch(zeros: torch.Tensor, curve: EllipticCurveLFunction) -> torch.Tensor:
-    """Unfold zeros of an elliptic curve L‑function (PyTorch)."""
-    sorted_z, _ = torch.sort(zeros)
-    spacings = sorted_z[:, 1:] - sorted_z[:, :-1]
-    midpoints = (sorted_z[:, :-1] + sorted_z[:, 1:]) / 2.0
-    density = curve.asymptotic_density_torch(midpoints)
+    density = curve.density_torch(torch.tensor(midpoints)).numpy()
     return spacings * density
 
 # =====================================================================
-# 4. BSD ONE Full Pipeline
+# 4. BSD Trainer – Fully Differentiable
 # =====================================================================
-def run_bsd_pipeline(curve: EllipticCurveLFunction,
-                     zeros: np.ndarray,
-                     steps: int = 150,
-                     XMIN: float = -5.0, XMAX: float = 5.0,
-                     device: str = "cpu"):
+class BSDTrainer:
     """
-    Main BSD pipeline: unfold zeros → SSC simulation → statistical comparison.
-
-    Parameters
-    ----------
-    curve : EllipticCurveLFunction
-        The curve under study.
-    zeros : np.ndarray
-        Array of imaginary parts of non‑trivial zeros (sorted).
-    steps : int
-        Number of SSC simulation steps.
-    XMIN, XMAX : float
-        Domain bounds for SSC particles.
-    device : str
-        Torch device.
-
-    Returns
-    -------
-    s_zeros : np.ndarray
-        Unfolded spacings of input zeros.
-    spacings_ssc : np.ndarray
-        Unfolded spacings of SSC output.
+    Train SSC to match GUE statistics of an elliptic curve L‑function.
+    Optionally uses real zero spacings as an empirical target,
+    and adds a rank‑aware low‑lying spacing loss.
     """
-    print(f"--- BSD ONE Pipeline for: {curve.name} ---")
-    dev = rh.get_device(device)
+    def __init__(self,
+                 simulator: rh.SSCSimulator,
+                 curve: EllipticCurveLFunction,
+                 device: str = 'cpu',
+                 use_ddp: bool = False,
+                 zero_spacings_target: Optional[torch.Tensor] = None):
+        self.device = device
+        self.curve = curve
+        self.use_ddp = use_ddp
+        self.zero_spacings_target = zero_spacings_target
 
-    # 1. Unfold input zeros using EC density
-    print("1. Unfolding zeros using elliptic curve density...")
-    s_np = unfold_ec_zeros_np(zeros, curve)
-    unfolded_cum = np.cumsum(np.insert(s_np, 0, 0))
-    z_min, z_max = unfolded_cum[0], unfolded_cum[-1]
-    N_particles = len(unfolded_cum) - 1
+        if use_ddp:
+            rank, world_size = rh.setup_distributed()
+            self.rank = rank
+            self.world_size = world_size
+            self.sim = nn.parallel.DistributedDataParallel(
+                simulator,
+                device_ids=[rank] if torch.cuda.is_available() else None
+            )
+        else:
+            self.rank = 0
+            self.world_size = 1
+            self.sim = simulator
 
-    # 2. SSC simulation initialised from these unfolded cumulative positions
-    print("2. Initialising SSC simulator...")
-    sim = rh.SSCSimulator(
-        N_particles=N_particles,
-        XMIN=XMIN, XMAX=XMAX, NGRID=512, device=dev
-    )
+        self.optimizer = Adam(simulator.parameters(), lr=0.01)
 
-    unfolded_tensor = torch.tensor(unfolded_cum, dtype=torch.float32, device=dev)
-    x0 = sim.initial_zeros(unfolded_tensor).unsqueeze(0)  # (1, N_particles)
+    def compute_loss(self, positions: torch.Tensor) -> torch.Tensor:
+        """Full loss: GUE statistics + empirical target (if given) + rank hint."""
+        sorted_pos, _ = torch.sort(positions, dim=1)
+        unfolded_pos = unfold_ec_positions_torch(sorted_pos, self.curve)
+        spacings = unfolded_pos[:, 1:] - unfolded_pos[:, :-1]
 
-    print(f"3. Running SSC dynamics for {steps} steps...")
-    x_final = sim.simulate(num_steps=steps, initial_x=x0)
+        # 1. Standard GUE losses (from rh_one)
+        loss_s   = rh.spacing_loss(spacings)
+        loss_pc  = rh.pair_correlation_loss(unfolded_pos)
+        loss_sff = rh.spectral_form_factor_loss(unfolded_pos)
+        loss_nv  = rh.number_variance_loss(unfolded_pos)
+        loss = loss_s + 0.5 * loss_pc + 0.1 * loss_sff + 0.2 * loss_nv
 
-    # 3. Map SSC positions back to cumulative unfolded scale and compute spacings
-    if z_max == z_min:
-        raise ValueError("Range of unfolded positions too small.")
-    scaling = (z_max - z_min) / (XMAX - XMIN)
-    u_ssc = (x_final - XMIN) * scaling + z_min
-    u_ssc_sorted, _ = torch.sort(u_ssc, dim=1)
-    spacings_ssc = (u_ssc_sorted[:, 1:] - u_ssc_sorted[:, :-1]).flatten().cpu().numpy()
+        # 2. Empirical target loss (if real zero spacings are provided)
+        if self.zero_spacings_target is not None:
+            bins = 50
+            s_max = 3.0
+            bin_edges = torch.linspace(0, s_max, bins+1, device=spacings.device)
+            bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2.0
+            w = bin_centers[1] - bin_centers[0]
+            s_flat = spacings.flatten().unsqueeze(1)
+            weights = torch.clamp(1.0 - torch.abs(s_flat - bin_centers) / w, min=0.0)
+            empirical = weights.mean(dim=0) + 1e-12
+            empirical = empirical / empirical.sum()
 
-    # 4. Basic statistics
-    print("\n[BSD Statistical Results]")
-    print(f"Curve: {curve.label}, Conductor: {int(curve.conductor)}, Rank: {curve.rank}")
-    print(f"Input zeros unfolded mean spacing: {s_np.mean():.4f} (target ~1.0)")
-    print(f"SSC simulated unfolded mean spacing : {spacings_ssc.mean():.4f}")
-    print("---------------------------------------------------------")
+            if not hasattr(self, 'target_hist'):
+                z_flat = self.zero_spacings_target.to(spacings.device).unsqueeze(1)
+                z_weights = torch.clamp(1.0 - torch.abs(z_flat - bin_centers) / w, min=0.0)
+                target_hist = z_weights.mean(dim=0) + 1e-12
+                target_hist = target_hist / target_hist.sum()
+                self.target_hist = target_hist.detach()
+            empirical_loss = ((empirical - self.target_hist) ** 2).sum()
+            loss = loss + 0.5 * empirical_loss
 
-    # Optional: Rank hint from low-lying zero density (heuristic)
-    if len(s_np) >= 20:
-        # Fraction of spacings in the first unit interval (0-1) can hint at rank
-        # For rank r, the probability of a zero near the origin is higher.
-        low_spacings = s_np[s_np < 1.0]
-        frac = len(low_spacings) / len(s_np)
-        print(f"Heuristic low-spacing fraction (<1): {frac:.3f} (higher suggests positive rank)")
+        # 3. Rank‑aware low‑lying spacing loss (heuristic)
+        if self.curve.rank > 0:
+            K = min(50, spacings.shape[1])
+            low_spacings = spacings[:, :K]
+            target_frac = (self.curve.rank + 1) / K  # crude approximation
+            soft_frac = torch.sigmoid((1.0 - low_spacings) / 0.1).mean()
+            rank_loss = (soft_frac - target_frac) ** 2
+            loss = loss + 0.1 * rank_loss
 
-    return s_np, spacings_ssc
+        return loss
+
+    def train_step(self, num_sim_steps: int = 100, batch_size: int = 1) -> float:
+        self.sim.train()
+        self.optimizer.zero_grad()
+        if self.use_ddp:
+            x = self.sim.module.initial_uniform(batch_size)
+            for _ in range(num_sim_steps):
+                x = self.sim(x)
+        else:
+            x = self.sim.initial_uniform(batch_size)
+            for _ in range(num_sim_steps):
+                x = self.sim.step(x)
+        loss = self.compute_loss(x)
+        loss.backward()
+        self.optimizer.step()
+        return loss.item()
+
+    def train(self, epochs: int = 100, num_sim_steps: int = 100, batch_size: int = 1):
+        for epoch in range(epochs):
+            loss = self.train_step(num_sim_steps, batch_size)
+            if self.rank == 0 and epoch % 10 == 0:
+                print(f"Epoch {epoch:4d} | Loss: {loss:.6f}")
 
 # =====================================================================
-# 5. Quick Example & CLI
+# 5. Command‑Line Interface
 # =====================================================================
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="BSD ONE — Elliptic Curve L‑Function Zero Statistics")
-    parser.add_argument('--label', type=str, default="11a1", help="Cremona label")
-    parser.add_argument('--conductor', type=int, default=11, help="Conductor N")
-    parser.add_argument('--rank', type=int, default=0, help="Analytic rank")
-    parser.add_argument('--zeros-file', type=str, default=None, help="Path to file with zero ordinates")
-    parser.add_argument('--num-mock', type=int, default=200, help="Number of mock zeros if no file")
-    parser.add_argument('--steps', type=int, default=150, help="SSC steps")
-    parser.add_argument('--device', type=str, default="cpu")
+    parser = argparse.ArgumentParser(
+        description="BSD ONE — Fully Differentiable Training for Elliptic Curves"
+    )
+    parser.add_argument('--label', type=str, default="11a1")
+    parser.add_argument('--conductor', type=int, default=11)
+    parser.add_argument('--rank', type=int, default=0)
+    parser.add_argument('--zeros-file', type=str, default=None,
+                        help="Path to file with zero ordinates (one per line)")
+    parser.add_argument('--N', type=int, default=2000, help="Number of SSC particles")
+    parser.add_argument('--XMIN', type=float, default=-5.0)
+    parser.add_argument('--XMAX', type=float, default=5.0)
+    parser.add_argument('--NGRID', type=int, default=512)
+    parser.add_argument('--epochs', type=int, default=100)
+    parser.add_argument('--steps', type=int, default=100)
+    parser.add_argument('--batch-size', type=int, default=1)
+    parser.add_argument('--device', type=str, default='cpu')
+    parser.add_argument('--use-ddp', action='store_true')
+    parser.add_argument('--seed', type=int, default=42)
     args = parser.parse_args()
 
-    # Create curve object
+    torch.manual_seed(args.seed)
+    device = rh.get_device(args.device)
+
+    # 1. Define the elliptic curve
     curve = EllipticCurveLFunction(args.label, args.conductor, args.rank)
 
-    # Acquire zeros
+    # 2. Optionally load real zeros and compute target spacings
+    zero_spacings_target = None
     if args.zeros_file and os.path.exists(args.zeros_file):
         print(f"Loading zeros from {args.zeros_file}")
         zeros = load_zeros_lmfdb(args.zeros_file)
+        if len(zeros) > 0:
+            s_np = unfold_zeros_np(zeros, curve)
+            zero_spacings_target = torch.tensor(s_np, dtype=torch.float32)
+            print(f"Loaded {len(zeros)} zeros. Mean unfolded spacing = {s_np.mean():.4f}")
+        else:
+            print("Zero file empty – training without empirical target.")
     else:
-        print(f"No zero file provided. Generating {args.num_mock} mock zeros for demonstration.")
-        zeros = generate_mock_zeros(curve, args.num_mock, t_start=10.0)
+        print("No zero file specified – using theoretical GUE losses only.")
 
-    if len(zeros) == 0:
-        print("Error: No zeros found.")
-        exit(1)
+    # 3. Build SSC simulator
+    sim = rh.SSCSimulator(
+        N_particles=args.N,
+        XMIN=args.XMIN, XMAX=args.XMAX,
+        NGRID=args.NGRID,
+        alpha=0.8, beta=0.05, gamma=0.0, sigma=0.3, dt=0.01,
+        device=device
+    )
 
-    # Run pipeline
-    run_bsd_pipeline(curve, zeros, steps=args.steps, device=args.device)
+    # 4. Create trainer and start
+    trainer = BSDTrainer(sim, curve, device=device, use_ddp=args.use_ddp,
+                         zero_spacings_target=zero_spacings_target)
+    print(f"Training SSC for {curve.name} ...")
+    trainer.train(epochs=args.epochs, num_sim_steps=args.steps,
+                  batch_size=args.batch_size)
