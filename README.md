@@ -11,6 +11,7 @@
 [![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.19869633-blue)](https://doi.org/10.5281/zenodo.19869633)
 [![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20358037-blue)](https://doi.org/10.5281/zenodo.20358037)
 [![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20501928-blue)](https://doi.org/10.5281/zenodo.20501928)
+[![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20730429-blue)](https://doi.org/10.5281/zenodo.20730429)
 
 
 RH ONE provides an **end‑to‑end differentiable pipeline** that:
