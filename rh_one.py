@@ -1,3 +1,4 @@
+"""
 =======================================================================
 RH ONE — Fully Differentiable Riemann Hypothesis & SSC Research Platform
 =======================================================================
@@ -238,27 +239,51 @@ def find_zeros_gram(start_index: int, num_zeros: int,
 
 # ================= Differentiable SSC Components (PyTorch) =====================
 class LearnableSOCKernel(nn.Module):
-    """Learnable Self‑Organised Criticality kernel with trainable parameters."""
+    """Learnable Self‑Organised Criticality kernel with trainable parameters.
+
+    BUGFIX (2026-06): `alpha` (the power-law exponent) was previously stored
+    as `exp(log_alpha)`, unconstrained above 0. Since the kernel value at
+    small r scales like `r_eps ** (-alpha)`, an unconstrained alpha can drift
+    upward during optimization and make the kernel diverge near r=0 (same
+    failure family as SUPER DNS ONE's CSOCKernel power-law instability).
+    Fixed by bounding alpha to [alpha_min, alpha_max] via a sigmoid
+    reparameterization, and by tying the small-r regularizer to the kernel's
+    own length scale (lambd) instead of a fixed 1e-6, so the floor stays
+    meaningful regardless of the units/scale r is expressed in.
+    """
     def __init__(self, init_Cs: float = 0.18, init_lambda: float = 12.0,
                  init_alpha: float = 0.5, init_tau: float = 10.0,
+                 alpha_min: float = 0.05, alpha_max: float = 2.0,
                  device: str = 'cpu'):
         super().__init__()
         self.log_Cs = nn.Parameter(torch.tensor(math.log(init_Cs), device=device))
         self.log_lambda = nn.Parameter(torch.tensor(math.log(init_lambda), device=device))
-        self.log_alpha = nn.Parameter(torch.tensor(math.log(init_alpha), device=device))
         self.log_tau = nn.Parameter(torch.tensor(math.log(init_tau), device=device))
+
+        self.alpha_min = alpha_min
+        self.alpha_max = alpha_max
+        init_alpha = min(max(init_alpha, alpha_min + 1e-6), alpha_max - 1e-6)
+        # Inverse-sigmoid init so sigmoid(raw_alpha) recovers init_alpha exactly.
+        frac = (init_alpha - alpha_min) / (alpha_max - alpha_min)
+        raw_init = math.log(frac / (1.0 - frac))
+        self.raw_alpha = nn.Parameter(torch.tensor(raw_init, device=device))
 
     @property
     def Cs(self): return torch.exp(self.log_Cs)
     @property
     def lambd(self): return torch.exp(self.log_lambda)
     @property
-    def alpha(self): return torch.exp(self.log_alpha)
+    def alpha(self):
+        return self.alpha_min + (self.alpha_max - self.alpha_min) * torch.sigmoid(self.raw_alpha)
     @property
     def tau(self): return torch.exp(self.log_tau)
 
     def forward(self, r: torch.Tensor) -> torch.Tensor:
-        return self.Cs * torch.pow(r + 1e-6, -self.alpha) * torch.exp(-r / self.lambd)
+        # Floor tied to the kernel's own length scale rather than a fixed
+        # constant, so the regularizer stays a sensible fraction of lambd
+        # regardless of the units that r is expressed in.
+        r_eps = 1e-3 * self.lambd
+        return self.Cs * torch.pow(r + r_eps, -self.alpha) * torch.exp(-r / self.lambd)
 
 class DiffRGRefiner(nn.Module):
     """Differentiable Renormalisation Group filter (Fourier low‑pass)."""
@@ -320,7 +345,17 @@ class SSCSimulator(nn.Module):
         self.rg = rg_filter
         self.log_alpha = nn.Parameter(torch.tensor(math.log(alpha), device=device))
         self.log_beta = nn.Parameter(torch.tensor(math.log(beta), device=device))
-        self.log_gamma = nn.Parameter(torch.tensor(math.log(abs(gamma)+1e-6), device=device))
+        # BUGFIX (2026-06): previously stored as log(|gamma|+1e-6) and exposed
+        # via `self.gamma = exp(log_gamma)`, which silently discarded the sign
+        # of the constructor argument -- self.gamma was always positive (with
+        # a ~1e-6 floor) no matter what `gamma` was passed in, including
+        # negative values. The sign is now stored separately as a fixed
+        # (non-trainable) buffer, and only the magnitude is optimized in log
+        # space, so self.gamma faithfully reproduces the requested sign while
+        # keeping the magnitude positive and learnable.
+        self.register_buffer('gamma_sign',
+                              torch.tensor(1.0 if gamma >= 0 else -1.0, device=device))
+        self.log_gamma = nn.Parameter(torch.tensor(math.log(abs(gamma) + 1e-6), device=device))
         self.log_sigma = nn.Parameter(torch.tensor(math.log(sigma), device=device))
         self.grid = nn.Parameter(torch.linspace(XMIN, XMAX, NGRID, device=device),
                                  requires_grad=False)
@@ -333,7 +368,7 @@ class SSCSimulator(nn.Module):
     @property
     def beta(self): return torch.exp(self.log_beta)
     @property
-    def gamma(self): return torch.exp(self.log_gamma)
+    def gamma(self): return self.gamma_sign * torch.exp(self.log_gamma)
     @property
     def sigma_val(self): return torch.exp(self.log_sigma)
 
