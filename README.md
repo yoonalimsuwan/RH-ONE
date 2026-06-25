@@ -9,7 +9,7 @@
 [![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20007526-blue)](https://doi.org/10.5281/zenodo.20007526)
 [![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20194882-blue)](https://doi.org/10.5281/zenodo.20194882)
 [![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.19869633-blue)](https://doi.org/10.5281/zenodo.19869633)
-[![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20840487-blue)](https://doi.org/10.5281/zenodo.20840487)
+[![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20844870-blue)](https://doi.org/10.5281/zenodo.20844870)
 [![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20501928-blue)](https://doi.org/10.5281/zenodo.20501928)
 [![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20730429-blue)](https://doi.org/10.5281/zenodo.20730429)
 
@@ -760,7 +760,7 @@ Email: msps4u@gmail.com
 ---
 
 If you use RH ONE in your research, please cite the corresponding paper/
-https://doi.org/10.5281/zenodo.20840487
+https://doi.org/10.5281/zenodo.20844870
 
 ```
 Thank you.
