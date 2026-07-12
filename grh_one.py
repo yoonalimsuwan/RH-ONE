@@ -2,7 +2,7 @@
 =======================================================================
 GRH ONE — Generalized Riemann Hypothesis Fully Differentiable Training
 =======================================================================
-Author : Yoon A Limsuwan
+Author : PAI , Yoon A Limsuwan
 License: MIT
 Year   : 2026
 
