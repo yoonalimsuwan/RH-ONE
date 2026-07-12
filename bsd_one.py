@@ -2,7 +2,7 @@
 =================================================================
 BSD ONE — Fully Differentiable Birch & Swinnerton-Dyer Extension
 =================================================================
-Author : Yoon A Limsuwan
+Author : PAI , Yoon A Limsuwan
 License: MIT
 Year   : 2026
 
