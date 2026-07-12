@@ -752,7 +752,7 @@ Happy researching the BSD conjecture through the lens of self‑organised critic
 
 📬 Contact
 
-Author: Yoon A Limsuwan
+Author: PAI , Yoon A Limsuwan
 Repository: https://github.com/yoonalimsuwan/RH-ONE
 
 Email: msps4u@gmail.com
