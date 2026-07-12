@@ -2,7 +2,7 @@
 =======================================================================
 RH ONE — Fully Differentiable Riemann Hypothesis & SSC Research Platform
 =======================================================================
-Author : Yoon A Limsuwan
+Author : PAI , Yoon A Limsuwan
 License: MIT
 Year   : 2026
 
