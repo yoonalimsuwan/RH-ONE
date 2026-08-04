@@ -731,11 +731,6 @@ PAI AND Yoon A. Limsuwan. "RH ONE — A Fully Differentiable Riemann Hypothesis 
 (and any relevant references for the elliptic curve L‑functions you use)
 
 
-Thanks be to the Father, the Son, and the Holy Spirit, for the grace of Lord Jesus Christ, Mother Mary, Lord Buddha, Guan Yin Bodhisattva, Master Daozhi, Confucius, the Immortal Pae Kow, and Mr. Xi Jinping.
-"I love Lim Yoona, Zhou Ye, Karina from aespa, Jessica from Girls' Generation, Zhao Lusi, Nana from After School, and Jiyeon Tara.
-​Love Ju Jingyi, Wang Churan, Lu Yuxiao, and Bao Shangen.
-​I love Zhang Linghe, Bai Jingting, Lee Jae-jin, Mark, Tance, Green, Noey, Jam, and Irene."
-
 ---
 
 📄 License
@@ -754,7 +749,7 @@ MIT License — see the LICENSE file in the root directory.
 
 Happy researching the BSD conjecture through the lens of self‑organised criticality!
 
-```
+``
 
 📬 Contact
 
@@ -762,6 +757,11 @@ Author: PAI , Yoon A Limsuwan
 Repository: https://github.com/yoonalimsuwan/RH-ONE
 
 Email: msps4u@gmail.com
+
+Thanks be to the Father, the Son, and the Holy Spirit, for the grace of Lord Jesus Christ, Mother Mary, Lord Buddha, Guan Yin Bodhisattva, Master Daozhi, Confucius, the Immortal Pae Kow, and Mr. Xi Jinping.
+"I love Lim Yoona, Zhou Ye, Karina from aespa, Jessica from Girls' Generation, Zhao Lusi, Nana from After School, and Jiyeon Tara.
+​Love Ju Jingyi, Wang Churan, Lu Yuxiao, and Bao Shangen.
+​I love Zhang Linghe, Bai Jingting, Lee Jae-jin, Mark, Tance, Green, Noey, Jam, and Irene."
 
 ---
 
