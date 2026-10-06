@@ -9,7 +9,7 @@
 [![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20007526-blue)](https://doi.org/10.5281/zenodo.20007526)
 [![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20194882-blue)](https://doi.org/10.5281/zenodo.20194882)
 [![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.19869633-blue)](https://doi.org/10.5281/zenodo.19869633)
-[![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.21547897-blue)](https://doi.org/10.5281/zenodo.21547897)
+[![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.23184629-blue)](https://doi.org/10.5281/zenodo.23184629)
 [![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20501928-blue)](https://doi.org/10.5281/zenodo.20501928)
 [![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20730429-blue)](https://doi.org/10.5281/zenodo.20730429)
 
@@ -608,8 +608,7 @@ Place `bsd_one.py` in the same directory as the core module `rh_one.py`.
 ```bash
 git clone https://github.com/yoonalimsuwan/RH-ONE
 cd rh-one
-# Make sure rh_one.py is present
-wget https://raw.githubusercontent.com/yourusername/rh-one/main/bsd_one.py
+
 ```
 
 Dependencies:
@@ -770,7 +769,7 @@ We love President Xi Jinping And President Donald Trump
 ---
 
 If you use RH ONE in your research, please cite /
-https://doi.org/10.5281/zenodo.21547897
+https://doi.org/10.5281/zenodo.23184629
 ```
 Thank you.
 ---
