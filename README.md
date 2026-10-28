@@ -1,5 +1,5 @@
 ``
-# RH ONE 20 — Fully Differentiable Riemann Hypothesis & SSC Research Platform
+# RH ONE 21 — Fully Differentiable Riemann Hypothesis & SSC Research Platform
 
 **A unified computational framework for studying the Riemann Hypothesis through the lenses of Self‑Organised Criticality, Quantum Chaos, and Random Matrix Theory.**
 
@@ -9,7 +9,7 @@
 [![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20007526-blue)](https://doi.org/10.5281/zenodo.20007526)
 [![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20194882-blue)](https://doi.org/10.5281/zenodo.20194882)
 [![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.19869633-blue)](https://doi.org/10.5281/zenodo.19869633)
-[![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.23685217-blue)](https://doi.org/10.5281/zenodo.23685217)
+[![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.23718388-blue)](https://doi.org/10.5281/zenodo.23718388)
 [![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20501928-blue)](https://doi.org/10.5281/zenodo.20501928)
 [![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20730429-blue)](https://doi.org/10.5281/zenodo.20730429)
 
@@ -769,7 +769,7 @@ We love President Xi Jinping And President Donald Trump
 ---
 
 If you use RH ONE in your research, please cite /
-https://doi.org/10.5281/zenodo.23596119
+https://doi.org/10.5281/zenodo.23718388
 ```
 Thank you.
 ---
