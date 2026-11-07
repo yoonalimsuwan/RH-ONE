@@ -1,5 +1,5 @@
 ``
-# RH ONE 21 — Fully Differentiable Riemann Hypothesis & SSC Research Platform
+# RH ONE 37 GNFS 8 Quantum Inspired Numbers Theory — Fully Differentiable Riemann Hypothesis & SSC Research Platform
 
 **A unified computational framework for studying the Riemann Hypothesis through the lenses of Self‑Organised Criticality, Quantum Chaos, and Random Matrix Theory.**
 
@@ -9,7 +9,7 @@
 [![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20007526-blue)](https://doi.org/10.5281/zenodo.20007526)
 [![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20194882-blue)](https://doi.org/10.5281/zenodo.20194882)
 [![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.19869633-blue)](https://doi.org/10.5281/zenodo.19869633)
-[![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.23718388-blue)](https://doi.org/10.5281/zenodo.23718388)
+[![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.24033063-blue)](https://doi.org/10.5281/zenodo.24033063)
 [![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20501928-blue)](https://doi.org/10.5281/zenodo.20501928)
 [![Zenodo](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20730429-blue)](https://doi.org/10.5281/zenodo.20730429)
 
@@ -543,6 +543,8 @@ If you use GRH ONE, please cite:
 
 Yoon A. Limsuwan. "RH ONE — A Fully Differentiable Riemann Hypothesis & SSC Research Platform." 2026.
 and the GRH ONE extension module.
+
+https://doi.org/10.5281/zenodo.24033063
 
 ---
 
