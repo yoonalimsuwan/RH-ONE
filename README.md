@@ -227,7 +227,7 @@ Instead of randomly scanning a vast candidate space, SSC contracts the search vo
 
 This transforms the bottleneck of GNFS from an exponential‑time probabilistic search into a constant‑time (per relation) contraction process — **without sacrificing correctness**.
 
-### A Unified, Differentiable Sieve – “GNFS 2.0”
+### A Unified, Differentiable Sieve – “GNFS O(1)”
 
 RH ONE’s differentiable pipeline enables a new kind of factorisation framework:
 
