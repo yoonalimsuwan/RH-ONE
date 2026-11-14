@@ -1,4 +1,4 @@
-we``
+
 # RH ONE 58# : Multi Domain Computation With Hilbert Polya , GNFS Quantum Inspired Numbers Theory — Fully Differentiable Riemann Hypothesis & SSC Research Platform
 
 **A unified computational framework for studying the Riemann Hypothesis through the lenses of Self‑Organised Criticality, Quantum Chaos, and Random Matrix Theory.**
